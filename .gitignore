@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnp.*
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.tox/
+.eggs/
+*.egg-info/
+
+# Builds
+dist/
+build/
+out/
+*.tsbuildinfo
+.next/
+.turbo/
+.vercel/
+.cache/
+.parcel-cache/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+.envrc
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime / coverage
+coverage/
+.nyc_output/
+*.lcov
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors / IDEs
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Local Claude / agent scratch (do not commit prompts or session state)
+.claude/
+.aider*
+.cursor*
+
+# Local-only docker volumes
+.data/
+data/
+postgres-data/
+redis-data/
+r2-cache/
+
+# Misc
+*.local
+.history/
+.tmp/
+tmp/
