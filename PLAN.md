@@ -2,14 +2,16 @@
 
 ## Context
 
-Today CutFlow is a marketing demo. The kimi.page deployment has 4 pages of UI (Home, Editor, Intelligence, About) but **zero backend, zero AI, zero upload, zero payments, zero auth, zero email capture**. The GitHub repo (`https://github.com/kaseydoesmarketing/cutflow.git`) is empty. The About page also has a serious legal problem: it presents AutoEdit's real-life founder Devin Huynh as "Founder & CEO of CutFlow AI" (verified in live JS bundle, file path `src/components/about/FounderStory.tsx:63:17`). Marketing copy across Home + Intelligence cites fabricated stats lifted from AutoEdit ("15,000+ editors", "99.2% accuracy", "4.67/5 Trustpilot", "14,000+ social signals").
+Today CutFlow is a marketing demo. The live kimi.page preview deployment has 4 pages of UI (Home, Editor, Intelligence, About) but **zero backend, zero AI, zero upload, zero payments, zero auth, zero email capture**. This repo holds the *exported source baseline* — only `src/pages/Home.tsx` is fleshed out; `Editor.tsx`, `Intelligence.tsx`, and `About.tsx` are 10-line "Coming soon" stubs that need to be **built**, not scrubbed.
+
+The kimi.page bundle additionally contains a `FounderStory.tsx` page that attributes CutFlow to AutoEdit's real-life founder Devin Huynh (right-of-publicity / false-light / Lanham §43(a) exposure). That file is **not** in this repo. The repo's only direct legal exposure is fabricated marketing copy inside `src/pages/Home.tsx` ("15,000+ editors", "99.2% accuracy", "4.67/5 Trustpilot", "14,000+ social signals", plus three FAQ answers and one Pro pricing-tier feature line that promise capabilities v1 explicitly defers).
 
 The goal of this plan: turn CutFlow into a real, operational, web-only MVP that uploads video + audio, detects beats, scores clips, assembles a beat-synced cut, renders MP4 output, and charges money for it. Auth, payments, storage, queue, workers — all real. Native plugins (Premiere/Resolve/FCP) are explicitly **deferred to v2+**.
 
 **Locked decisions** (from clarification round):
 - v1 scope: **Web-only MVP** (Upload → beat detection → AI cut selection → render → MP4 export)
-- Frontend source: **Export from kimi.page workspace** (we scrub the legal issues, don't rebuild from zip)
-- Hosting: **VPS 72.60.112.155** (shared with PodAir/TightSlice/SOD2DAY pattern)
+- Frontend source: **Export from kimi.page workspace** as the Phase 1.0 starting point (Editor/Intelligence/About content lives there, but Huynh + fabricated-stats content must be scrubbed during import)
+- Hosting: **Shared VPS already running PodAir / TightSlice / SOD2DAY** (Docker Compose pattern; hostname stays out of this public doc — see `$VPS_HOST` in env)
 
 **Stack** (chosen to match Kasey's existing patterns):
 - Frontend: React 19 + Vite + TypeScript (already built, needs hardening + scrub)
@@ -27,56 +29,128 @@ The goal of this plan: turn CutFlow into a real, operational, web-only MVP that 
 
 ---
 
-## Phase 0 — Legal & Ethics Scrub (BLOCKS EVERYTHING)
+## What this plan assumes
 
-Cannot start the build until this is done. The current site is a sue-on-sight target.
+- This repo is the **kimi.page export baseline**, layout currently flat (`src/`, `public/`, root configs). Confirmed by `git log` showing a single initial commit.
+- **Phase 0 runs against the current flat `src/` layout.** Phase 1.0 lifts everything into `apps/web/`. Phase 1.1+ assumes the lift is done.
+- All "PodAir / GMLX / Ascend" code references are on Kasey's local machine and **not** visible from this repo — they are reference patterns to copy the *shape* of, not importable code.
+- Smoke tests + Phase 4.5 are blockers for cutting over DNS to production, **not** for merging code to `main`.
+- Package manager today is **npm** (`package-lock.json` is committed). Phase 1.0 decides whether to stay on npm workspaces or migrate to pnpm.
 
-### 0.1 Remove Devin Huynh appropriation
-- Delete or rewrite `src/components/about/FounderStory.tsx` — strip name, photo alt text, and any "founded CutFlow AI" narrative attached to Huynh
-- Delete `public/founder-portrait.jpg` (assuming it's Huynh's likeness — replace with Kasey's photo, a placeholder silhouette, or remove the section entirely for v1)
-- Audit and rewrite any About-page copy that puts words in Huynh's mouth or implies he founded CutFlow
+---
 
-### 0.2 Strip fabricated stats from `src/pages/Home.tsx`
-Replace these specific strings (confirmed by file:line):
-- Line ~534: "15,000+ editors bought into AI-powered editing… analyzed 14,000+ social signals"
-- Line ~624: `stats` array with `99.2% Beat accuracy`, `12 Dimension clip analysis`, `8+ Pro formats supported`, `0 Plugins needed`
-- Line ~758-771: testimonials block (`Marcus J.`, `Priya S.`, `Diego R.` — fictional)
-- Line ~807: "Trusted by 15,000+ Editors Worldwide"
-- Line ~1208: "Join 15,000+ editors already creating with AI"
+## Phase 0 — Hygiene & Honest Copy (do before public launch)
 
-Replacement strategy: either remove these sections for the v1 launch, or rewrite with **honest "early access" framing** ("Built by editors who got tired of waiting on AutoEdit." "Pre-launch beta — join the waitlist."). Stats can return after we have real numbers from real users.
+Most of this is housekeeping. Two items are real launch blockers: 0.2 (fabricated copy is FTC §5 / state UDAP exposure) and 0.4 (Stripe live mode requires real legal pages). The rest is cleanup that can land alongside the build.
 
-### 0.3 Rewrite Intelligence Hub
-The current Intelligence page is effectively a public hit piece naming Devin Huynh, his company (Eleven Percent), and quoting specific complaint percentages attributed to him by name. Lanham Act §43(a) exposure if published.
+### 0.1 About page — decision deferred to Phase 1
 
-Two acceptable approaches:
-- **Option A (recommended):** Rewrite as a *category* analysis — "AI Video Editing in 2026 — Where the Field Is" — without naming AutoEdit or Huynh. Reference "the leading Premiere plugin" generically. Compare feature *categories*, not specific competitors.
-- **Option B:** Delete the Intelligence page entirely for v1. Bring it back later as a private investor/internal doc.
+The repo's `src/pages/About.tsx` is a 10-line "Coming soon" stub. There is no Devin Huynh content in this repo to remove. Two acceptable paths:
+- **Option A:** ship v1 without an About page (drop the route + nav links).
+- **Option B:** build a short, honest About page that attributes CutFlow to Kasey (or to no one in particular). No fabricated founder narrative. No third-party real people.
 
-### 0.4 Stub legal pages
+`public/founder-portrait.jpg` is unreferenced from any source file (`grep -rn founder-portrait src/` returns zero hits). The image is a stock-style photo, not a likeness risk. **Delete it as dead weight**, not as a legal action.
+
+The live kimi.page deployment with the Huynh `FounderStory.tsx` will be replaced when production goes up; nothing further to do in this repo for that issue.
+
+### 0.2 Strip fabricated copy from `src/pages/Home.tsx` (real blocker)
+
+Use section names — line numbers will drift after the first edit. As of HEAD:
+
+| Section | Current claim | Action |
+| --- | --- | --- |
+| `WhyCutFlowWinsSection` intro (≈L534) | "15,000+ editors bought into AI-powered editing… analyzed 14,000+ social signals" | Drop both numbers; rewrite as honest "the leading plugin has known gaps; we're building a better one" |
+| `WhyCutFlowWinsSection` stat cards (≈L546, L560) | "14,000+ signals analyzed", "15 pain points found" | Drop or replace with "early access" framing |
+| `StatsSection` `stats` array (≈L624) | `99.2% Beat accuracy`, `12 Dimension clip analysis`, `8+ Pro formats supported`, `0 Plugins needed` | Replace with real, defensible numbers post-launch. For v1: hide the section or use neutral "beat-synced, browser-native, no install" framing |
+| `TestimonialsSection` `testimonials` array (≈L757-771) | Fictional `Marcus J.`, `Priya S.`, `Diego R.` | Remove the array entirely; hide the section pre-launch. Bring back when real users opt in |
+| `TestimonialsSection` headline (≈L807) | "Trusted by 15,000+ Editors Worldwide" | Replace with "Pre-launch — join the waitlist" |
+| `PricingSection` Pro tier features (≈L875) | `"Plugin for Premiere Pro & DaVinci"` | **Remove** — v1 ships no native plugins |
+| `FAQSection` plugin answer (≈L1036) | Promises plugins for Premiere/Resolve/FCP | Rewrite: "v1 is web-only. Native plugins are on the roadmap for v2." |
+| `FAQSection` formats answer (≈L1040) | "supports BRAW, MXF, ProRes, and RED RAW formats natively" | Rewrite: "v1 ingests MP4 and MOV. Professional formats are on the roadmap." |
+| `FAQSection` accuracy answer (≈L1044) | "99.2% accuracy" | Remove the number or replace with qualitative claim |
+| `CTASection` form copy (≈L1208) | "Join 15,000+ editors already creating with AI" | Rewrite: "Be first in line when CutFlow opens." |
+
+Replacement strategy: honest "early access / pre-launch beta" framing throughout. Real stats return when there are real users.
+
+### 0.3 Intelligence Hub — decision deferred to Phase 1
+
+The repo's `src/pages/Intelligence.tsx` is a 10-line stub. The live kimi.page Intelligence page (which names Devin Huynh and Eleven Percent with percentage complaints attributed by name) is the hit piece — it does **not** exist in this repo and will be replaced when production goes up. Phase 0 has nothing to do here.
+
+Phase 1 decision:
+- **Option A:** build a rewritten category-analysis version — "AI Video Editing in 2026 — Where the Field Is" — that names no specific competitor.
+- **Option B:** ship v1 without an Intelligence page (drop the route + nav links). Bring it back later as a private investor / internal doc.
+
+### 0.4 Legal pages (real blocker for Stripe live mode)
+
 Create real (template + customized) Terms of Service, Privacy Policy, Refund Policy, DMCA Notice page, Acceptable Use Policy. Required for Stripe live mode and for basic SaaS legitimacy. Use Termly or a competent template — do not freelance these.
 
-**Critical files modified in Phase 0:**
-- `apps/web/src/pages/Home.tsx`
-- `apps/web/src/components/about/FounderStory.tsx` (delete or rewrite)
-- `apps/web/src/pages/Intelligence.tsx` (rewrite or delete)
-- `apps/web/src/pages/About.tsx`
-- `apps/web/src/pages/legal/*` (new — Terms, Privacy, Refund, DMCA, AUP)
-- `apps/web/public/founder-portrait.jpg` (delete or replace)
+### 0.5 Footer + Navbar + dead-dep cleanup (one self-contained pass)
+
+- `src/components/Navbar.tsx:7-11` — replace `'/#/editor'` / `'/#/intelligence'` / `'/#/about'` hrefs with proper `<Link to="/editor">` etc. (real React Router paths, not hash anchors).
+- `src/components/Footer.tsx:6, 8, 12` — same fix: the same broken hash hrefs appear in the footer nav links.
+- `src/components/Footer.tsx:102-118` — second waitlist form with `onSubmit={(e) => e.preventDefault()}`. Either wire to the same `/v1/waitlist` endpoint as the Home form (Phase 2.6), or remove the form for v1.
+- `src/pages/Home.tsx:8` — remove `BarChart3, Layers, Wand2` from the `lucide-react` import. `tsconfig.app.json:27-28` has `noUnusedLocals: true` + `noUnusedParameters: true`, so `tsc -b` (gating the `build` script) fails until these are gone.
+- `package.json` — both `react-router` and `react-router-dom` are installed. `src/main.tsx:3` imports `BrowserRouter` from `react-router`; `App.tsx`, `Navbar.tsx`, `Footer.tsx` import from `react-router-dom`. In v7 the package was unified; either choice works. **Decision: standardize on `react-router-dom`** (3 of 4 files already use it). Edit `src/main.tsx:3` to import from `react-router-dom` and remove `"react-router": "^7.6.1"` from `dependencies`.
+- `public/editor-demo.mp4` — delete. Byte-identical to `public/hero-video.mp4` (same md5), and `grep -rn editor-demo src/` returns zero references. Only `hero-video.mp4` is used (Home.tsx:296).
+
+**Critical files modified in Phase 0** (all paths are pre-lift; Phase 1.0 will relocate them under `apps/web/`):
+- `src/pages/Home.tsx` (0.2 copy scrub + 0.5 import fix)
+- `src/pages/About.tsx`, `src/pages/Intelligence.tsx` (decisions deferred to Phase 1)
+- `src/components/Navbar.tsx`, `src/components/Footer.tsx` (0.5 routes + form)
+- `src/main.tsx` (0.5 router import)
+- `src/pages/legal/*` (new — Terms, Privacy, Refund, DMCA, AUP)
+- `package.json` (0.5 drop dead dep)
+- `public/founder-portrait.jpg` (0.1 delete)
+- `public/editor-demo.mp4` (0.5 delete duplicate)
 
 ---
 
 ## Phase 1 — Repo Scaffold & Monorepo Setup
 
+### 1.0 Lift the existing frontend into `apps/web/`
+
+Do this **before** anything else in Phase 1. The rest of the plan assumes the lift is complete.
+
+```bash
+mkdir -p apps/web
+git mv src apps/web/src
+git mv public apps/web/public
+git mv index.html apps/web/
+git mv vite.config.ts apps/web/
+git mv tsconfig.json tsconfig.app.json tsconfig.node.json apps/web/
+git mv tailwind.config.js postcss.config.js eslint.config.js apps/web/
+git mv components.json apps/web/
+git mv package.json package-lock.json apps/web/
+```
+
+Then add a root `package.json` declaring npm workspaces:
+
+```json
+{
+  "name": "cutflow",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"]
+}
+```
+
+Verify the lift before continuing:
+```bash
+npm install
+npm -w apps/web run build       # should succeed once Phase 0.5 has removed the unused imports
+```
+
+Decide here whether to stay on npm workspaces (default — the project ships with npm today) or migrate to pnpm. The rest of this plan uses `npm -w apps/web ...` syntax; if you switch to pnpm, search-replace `npm -w apps/web run` → `pnpm -F web` and `npm install` → `pnpm install`.
+
 ### 1.1 Initialize repo structure
-Push to the (currently empty) `https://github.com/kaseydoesmarketing/cutflow.git`:
+
+Final repo layout (after the lift in 1.0 plus the new backend scaffolds in 1.2 / 2 / 3):
 
 ```
 cutflow/
 ├── apps/
-│   ├── web/                 (React SPA — from kimi.page export, scrubbed)
-│   ├── api/                 (FastAPI service)
-│   └── worker/              (Python RQ worker — AI + render)
+│   ├── web/                 (React SPA — lifted from root in 1.0, scrubbed in 0.2 + 0.5)
+│   ├── api/                 (FastAPI service — Phase 2)
+│   └── worker/              (Python RQ worker — Phase 3)
 ├── infra/
 │   ├── compose/
 │   │   ├── docker-compose.yml
@@ -91,24 +165,23 @@ cutflow/
 │   ├── migrate.sh
 │   └── smoke-test.sh
 └── .github/workflows/
-    ├── ci.yml               (lint + typecheck + test on PR)
+    ├── ci.yml               (lint + typecheck on PR; tests once they exist)
     └── deploy.yml           (rsync + docker rebuild on push to main)
 ```
 
-### 1.2 Web frontend ingestion
-- Export source from kimi.page workspace (Kasey provides)
-- Move into `apps/web/`
-- Fix the broken build: `apps/web/src/pages/Home.tsx:8` — remove unused imports `BarChart3`, `Layers`, `Wand2`
-- Fix navbar routing in `apps/web/src/components/Navbar.tsx:7-11` — change `'/#/editor'` etc. to `'/editor'` (real React Router paths, not hash anchors)
-- Resolve `react-router` vs `react-router-dom` duplicate import — standardize on `react-router-dom@7`
-- Dedupe `apps/web/public/hero-video.mp4` and `apps/web/public/editor-demo.mp4` (identical md5 — keep one, reference twice)
-- Code-split per route: lazy-load Editor/Intelligence/About via `React.lazy()` (current 522 KB → expect ~300 KB initial)
-- Add `prefers-reduced-motion` guards on framer-motion + gsap animations
-- Add favicon.ico, robots.txt, sitemap.xml, manifest.json, JSON-LD (`SoftwareApplication` schema)
-- Add `<meta name="theme-color">`, OG tags, Twitter card tags
+### 1.2 Web frontend extensions (post-lift)
+
+Phase 0.5 already handled the broken-build, broken-nav, dead-dep, duplicate-asset items. Remaining work in 1.2:
+
+- Export the fuller Editor / Intelligence / About content from the kimi.page workspace and merge into `apps/web/src/pages/` (after the lift). Apply the Phase 0.2 scrub to anything ported in.
+- Code-split per route: lazy-load Editor / Intelligence / About via `React.lazy()` (current 522 KB → expect ~300 KB initial).
+- Add `prefers-reduced-motion` guards on framer-motion + gsap animations.
+- Add `apps/web/public/{favicon.ico,robots.txt,sitemap.xml,manifest.json}` and JSON-LD (`SoftwareApplication` schema) in `apps/web/index.html`.
+- Add `<meta name="theme-color">`, OG tags, Twitter card tags.
 
 ### 1.3 Docker Compose — VPS service definition
-Add a new compose stack to VPS `/opt/cutflow/`:
+
+Add a new compose stack to the shared VPS at `/opt/cutflow/`:
 ```yaml
 services:
   cutflow_web:        # Cloudflare Pages — NOT in compose (separate deploy)
@@ -117,11 +190,12 @@ services:
   cutflow_postgres:   # Postgres 16, volume /var/lib/postgresql/data
   cutflow_redis:      # Redis 7, volume /data
 ```
-- Use `-p cutflow` project flag for `docker compose` to namespace from PodAir
+- Use `-p cutflow` project flag for `docker compose` to namespace from the other services on the shared VPS
 - nginx server block at `/opt/cutflow/nginx/cutflow.conf`, served by host nginx (matches PodAir)
 - nginx routes `api.cutflow.ai/*` → `cutflow_api:8001`
 
 **Critical files created in Phase 1:**
+- `package.json` (root, workspaces declaration)
 - `infra/compose/docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`
 - `infra/nginx/cutflow.conf`
 - `scripts/deploy.sh` (model after PodAir's `scripts/deploy.sh`)
@@ -173,7 +247,7 @@ Indexes:
 - Sign-in / sign-up routes: `/sign-in`, `/sign-up`, `/sso-callback`
 - API verifies Clerk JWT on every authenticated route (`apps/api/app/core/security.py`)
 - Webhook endpoint `POST /v1/auth/webhook` syncs user.created / user.updated / user.deleted into `users` table
-- Reuse PodAir's Clerk integration as reference (`apps/api/src/lib/auth.ts` in PodAir codebase)
+- Reuse PodAir's Clerk integration as a reference *pattern* (copy the shape, not the bytes)
 
 ### 2.4 Payments via Stripe
 - 2 live prices created in Stripe: Pro $29/mo, Studio $79/mo (both monthly recurring)
@@ -205,7 +279,7 @@ TIERS = {
 - `POST /v1/waitlist` — public, body `{ email, source? }`, Cloudflare Turnstile token required, dedupes on email
 - On insert, push to Resend audience via `audiences.contacts.create`
 - Send "you're in" confirmation email via Resend template
-- Wire `apps/web/src/pages/Home.tsx:1213` form to this endpoint (currently `onSubmit={(e) => e.preventDefault()}`)
+- Wire `apps/web/src/pages/Home.tsx` `CTASection` form (currently `onSubmit={(e) => e.preventDefault()}`) AND `apps/web/src/components/Footer.tsx` `newsletter` form (same pattern) to this endpoint
 
 ### 2.7 Observability
 - Sentry frontend SDK in `apps/web/src/main.tsx`
@@ -290,7 +364,7 @@ apps/worker/
 
 ### 3.3 Frontend Editor page (the dashboard)
 
-Rebuild from kimi.page export. Key states:
+Rebuild from kimi.page export (scrub any references to v2 features during port). Key states:
 - **Empty:** "Create your first project" CTA
 - **Upload:** drag-drop area, audio + clips upload progress bars (multipart, resumable via tus-js-client or custom)
 - **Processing:** stepper UI showing probe → beats → score progress (poll `GET /v1/projects/:id` every 2s)
@@ -314,20 +388,22 @@ Rebuild from kimi.page export. Key states:
 
 ### 4.1 DNS
 - Cloudflare: `cutflow.ai` (apex + www) → Pages
-- Cloudflare: `api.cutflow.ai` → DNS A record → 72.60.112.155 (proxied through CF for SSL + DDoS)
+- Cloudflare: `api.cutflow.ai` → DNS A record → `$VPS_HOST` (proxied through CF for SSL + DDoS)
 - Cloudflare: `staging.cutflow.ai`, `api.staging.cutflow.ai` (optional, for pre-prod)
 
 ### 4.2 Marketing + SPA via Cloudflare Pages
-- Connect Pages to GitHub repo, build command `pnpm -F web build`, output `apps/web/dist`
+- Connect Pages to GitHub repo. Build command depends on Phase 1.0 decision:
+  - npm workspaces (default): build command `npm -w apps/web run build`, output `apps/web/dist`
+  - pnpm: build command `pnpm -F web build`, output `apps/web/dist`
 - Branch deploys: `main` → production, all other branches → preview URLs
 - Free, instant, zero infra to manage
 - Env vars in Pages: `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_API_BASE`, `VITE_SENTRY_DSN`, `VITE_STRIPE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY`
 
 ### 4.3 API + worker on VPS
 - Folder: `/opt/cutflow/` (matches `/opt/podair/` pattern)
-- `.env` file at `/opt/cutflow/.env` — owner root, mode 600 (per `feedback_ascend_no_paren_stripping_linter.md`-level discipline)
-- Compose project name `-p cutflow` to namespace from PodAir/TightSlice
-- `scripts/deploy.sh` — rsync `apps/api` and `apps/worker` to VPS, `docker compose -p cutflow build --no-cache api worker`, `up -d --force-recreate api worker`, run Alembic migrations, `nginx -s reload` after API recreate (per `session-2026-04-10-round3-boto3-s3-SHIPPED.md` lesson — nginx upstream cache holds old IP otherwise)
+- `.env` file at `/opt/cutflow/.env` — owner root, mode 600
+- Compose project name `-p cutflow` to namespace from PodAir / TightSlice / SOD2DAY on the shared VPS
+- `scripts/deploy.sh` — rsync `apps/api` and `apps/worker` to `$VPS_HOST`, `docker compose -p cutflow build --no-cache api worker`, `up -d --force-recreate api worker`, run Alembic migrations, `nginx -s reload` after API recreate (nginx upstream cache holds old IP otherwise — lesson from the 2026-04-10 incident on the GMLX stack)
 
 ### 4.4 Secrets to populate before launch
 | Secret | Source |
@@ -345,9 +421,10 @@ Rebuild from kimi.page export. Key states:
 | `RESEND_AUDIENCE_ID` | Resend audience for waitlist |
 | `SENTRY_DSN_API`, `SENTRY_DSN_WORKER` | Sentry project |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile |
+| `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` | GitHub Actions secrets (for `deploy.yml`) |
 
 ### 4.5 Smoke test (`scripts/smoke-test.sh`)
-Mirrors PodAir's 13-point smoke pattern. Must all pass before announcing GA:
+Mirrors PodAir's 13-point smoke pattern. Must all pass before cutting over DNS for GA:
 1. `curl -fsS https://cutflow.ai` → 200, HTML contains "CutFlow"
 2. `curl -fsS https://api.cutflow.ai/v1/health` → `{ ok: true, db: ok, redis: ok, r2: ok }`
 3. Clerk sign-up flow → user row inserted via webhook
@@ -363,8 +440,8 @@ Mirrors PodAir's 13-point smoke pattern. Must all pass before announcing GA:
 13. Worker autoheal — kill `cutflow_worker` container, verify Docker restarts it within 30s
 
 ### 4.6 CI/CD
-- `.github/workflows/ci.yml` — lint (ruff + eslint), typecheck (mypy + tsc), tests (pytest + vitest) on PR
-- `.github/workflows/deploy.yml` — on push to `main`: build, test, then SSH+rsync to VPS, run `scripts/deploy.sh`, run smoke-test, post to Slack (or just log)
+- `.github/workflows/ci.yml` — lint (ruff + eslint), typecheck (mypy + tsc) on PR. Add `tests (pytest + vitest)` once a meaningful test exists — the repo ships with no tests today, so don't gate merges on a runner that isn't installed yet.
+- `.github/workflows/deploy.yml` — on push to `main`: build, then SSH+rsync to `$VPS_HOST`, run `scripts/deploy.sh`, run smoke-test, post to Slack (or just log). Once tests exist, run them between build and deploy.
 - Use `appleboy/ssh-action` (PodAir pattern). Store `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` as repo secrets
 
 **Critical files created in Phase 4:**
@@ -392,19 +469,19 @@ Mirrors PodAir's 13-point smoke pattern. Must all pass before announcing GA:
 
 ---
 
-## Reused patterns from your existing codebases
+## Reused patterns from existing codebases
 
-These save weeks vs. building from scratch:
+These save weeks vs. building from scratch. **Paths under `/Users/kvimedia/` are on Kasey's local machine — copy the *shape*, not the bytes. Nothing here is importable from this repo.**
 
-- **Clerk auth flow + JWT verification** → copy from PodAir `apps/api/src/lib/auth.ts` + `apps/web/lib/auth.ts`
-- **Stripe Checkout + webhook handler** → copy from PodAir `apps/api/src/routes/v1.ts` Stripe section
-- **Deploy script (rsync + docker rebuild + nginx reload)** → copy from PodAir `scripts/deploy.sh` (already has the `nginx -s reload after api recreate` lesson baked in)
-- **R2 / S3 presigned multipart upload** → adapt from PodAir's chunked-upload pattern in `apps/web/lib/chunkQueue.ts` + `/v1/sessions/:id/chunks/*`
-- **RQ worker bootstrap + Sentry integration** → copy from GMLX `backend/worker.py` (and apply the Round 4 lesson: workers MUST `sentry_sdk.init(integrations=[RqIntegration()])`)
-- **FastAPI structure** → copy GMLX `backend/` skeleton
-- **Resend transactional email** → copy from Ascend lead-capture endpoint
-- **Nginx server block + Let's Encrypt termination** → copy from PodAir nginx config
-- **Cloudflare Turnstile on public POST** → copy from Ascend lead capture
+- **Clerk auth flow + JWT verification** → PodAir `apps/api/src/lib/auth.ts` + `apps/web/lib/auth.ts`
+- **Stripe Checkout + webhook handler** → PodAir `apps/api/src/routes/v1.ts` (Stripe section)
+- **Deploy script (rsync + docker rebuild + nginx reload)** → PodAir `scripts/deploy.sh` (already bakes the `nginx -s reload after api recreate` lesson)
+- **R2 / S3 presigned multipart upload** → PodAir's chunked-upload pattern in `apps/web/lib/chunkQueue.ts` + `/v1/sessions/:id/chunks/*`
+- **RQ worker bootstrap + Sentry integration** → GMLX `backend/worker.py` (workers MUST `sentry_sdk.init(integrations=[RqIntegration()])` — the Round 4 lesson)
+- **FastAPI structure** → GMLX `backend/` skeleton
+- **Resend transactional email** → Ascend lead-capture endpoint
+- **Nginx server block + Let's Encrypt termination** → PodAir nginx config
+- **Cloudflare Turnstile on public POST** → Ascend lead capture
 - **Boto3 timeouts (`connect_timeout=5, read_timeout=30, tcp_keepalive=True`)** — REQUIRED on R2 client. Skip this and we recreate the 7-hour GMLX outage from 2026-04-10.
 
 ---
@@ -414,8 +491,8 @@ These save weeks vs. building from scratch:
 **Pre-revenue monthly fixed costs:**
 | Line item | Cost |
 | --- | --- |
-| .ai domain | ~$5 |
-| VPS 72.60.112.155 | $0 marginal (shared) |
+| `.ai` domain | ~$70-100/yr (≈$7/mo amortized; .ai registrations are usually 2-year minimums) |
+| Shared VPS | $0 marginal (running PodAir / TightSlice / SOD2DAY already) |
 | Cloudflare R2 (pre-launch storage) | $0-5 |
 | Cloudflare Pages, DNS, Turnstile | $0 |
 | Postgres + Redis (in Docker on VPS) | $0 |
@@ -423,7 +500,7 @@ These save weeks vs. building from scratch:
 | Stripe | $0 fixed, 2.9% + 30¢ per txn |
 | Resend (up to 100/day) | $0 |
 | Sentry (up to 5K errors/mo) | $0 |
-| **Total fixed pre-revenue** | **~$5/month** |
+| **Total fixed pre-revenue** | **~$12/month** |
 
 **Variable when users start using it:**
 - R2 storage: $0.015/GB/mo; if avg user has 5 GB and we have 1,000 users = $75/mo
@@ -440,7 +517,7 @@ These save weeks vs. building from scratch:
 
 | Week | Focus | Exit criteria |
 | --- | --- | --- |
-| **1** | Phase 0 legal scrub + Phase 1 repo scaffold + Phase 2.1-2.3 (FastAPI skeleton + Clerk auth + DB migrations) | Sign up via Clerk → user row exists → `GET /v1/me` returns it |
+| **1** | Phase 0 hygiene + Phase 1.0 monorepo lift + Phase 1 scaffold + Phase 2.1-2.3 (FastAPI skeleton + Clerk auth + DB migrations) | Sign up via Clerk → user row exists → `GET /v1/me` returns it |
 | **2** | Phase 2.4-2.7 (Stripe + R2 + waitlist + Sentry + observability) | Pay $29 with test card → plan_tier flips to 'pro' → upload a small audio file to R2 successfully |
 | **3** | Phase 3.1-3.2 (worker scaffold + probe + beats + score_clips jobs) | Upload audio → beats detected and stored. Upload 3 clips → motion scores stored. |
 | **4** | Phase 3.2 cont. + 3.3 (render job + Editor dashboard UI) | End-to-end: upload audio + clips → click Render Staircase → MP4 downloads, audio is beat-synced to cuts |
@@ -463,8 +540,8 @@ End-to-end test script (`scripts/smoke-test.sh`):
 8. **Sentry plumbing:** force an error → assert event reaches Sentry dashboard (via Sentry API)
 
 Manual UAT checklist (Kasey):
-- Marketing site renders, no fabricated stats remain, no Devin Huynh references anywhere
-- Waitlist form actually captures emails (check Resend audience)
+- Marketing site renders, no fabricated stats remain, no third-party real people named anywhere
+- Waitlist form (Home + Footer) actually captures emails (check Resend audience)
 - Sign up → sign in → upload → render → download MP4
 - Pay → upgrade → unlimited projects unlocked
 - Cancel subscription → downgrade at period end (verify via Stripe portal)
@@ -476,26 +553,34 @@ Manual UAT checklist (Kasey):
 
 ## Risks & open items
 
-1. **Founder portrait file** — need to confirm whose face is actually on `/founder-portrait.jpg`. If it's Devin Huynh's, it must come out today regardless of build phase. If it's a stock photo or Kasey, no action needed.
-2. **`.ai` domain** — does Kasey already own `cutflow.ai`? If not, check availability + budget.
-3. **Stripe live mode requires** — verified business, public Terms/Privacy/Refund URLs, support email, physical address (can be P.O. box). All in Phase 0.4.
-4. **Clerk webhook + Stripe webhook ordering race** — what if Clerk webhook lands AFTER first Stripe webhook? Use idempotent upserts on `users(clerk_user_id)`.
-5. **FFmpeg in worker container** — Debian-slim base + `apt install ffmpeg` adds ~200 MB to image. Consider `linuxserver/ffmpeg` base instead for smaller image.
-6. **Edit-style algorithms need tuning** — Staircase + Random will produce passable but not great cuts on first pass. Plan a week post-MVP for algorithm iteration based on test footage.
-7. **kimi.page source export** — if Kasey can't actually export the source from his kimi workspace, fallback is to rebuild Editor/Intelligence/About from scratch using the marketing spec (adds ~3 days to Week 1).
-8. **Watermark UX** — Free users will hate the watermark but that's the conversion lever. Test pricing page conversion before vs. after committing to watermark approach.
+1. **`.ai` domain** — does Kasey already own `cutflow.ai`? If not, ~$70-100/yr (2-year minimum), check availability + budget.
+2. **Stripe live mode requires** — verified business, public Terms/Privacy/Refund URLs, support email, physical address (can be P.O. box). All in Phase 0.4.
+3. **Clerk webhook + Stripe webhook ordering race** — what if Clerk webhook lands AFTER first Stripe webhook? Use idempotent upserts on `users(clerk_user_id)`.
+4. **FFmpeg in worker container** — Debian-slim base + `apt install ffmpeg` adds ~200 MB to image. Consider `linuxserver/ffmpeg` base instead for smaller image.
+5. **Edit-style algorithms need tuning** — Staircase + Random will produce passable but not great cuts on first pass. Plan a week post-MVP for algorithm iteration based on test footage.
+6. **kimi.page source export** — if Kasey can't actually export the source from his kimi workspace, fallback is to rebuild Editor / Intelligence / About from scratch using the marketing spec (adds ~3 days to Week 1).
+7. **Watermark UX** — Free users will hate the watermark but that's the conversion lever. Test pricing page conversion before vs. after committing to watermark approach.
+8. **npm vs pnpm decision in Phase 1.0** — repo ships npm today. If anyone on the project later prefers pnpm, do the migration in one PR, not in dribs.
 
 ---
 
 ## Critical files / paths (one-glance reference)
 
-**To modify:**
-- `apps/web/src/pages/Home.tsx` (legal scrub + form wire-up)
-- `apps/web/src/pages/Editor.tsx`, `Intelligence.tsx`, `About.tsx` (rebuild or scrub)
-- `apps/web/src/components/Navbar.tsx` (fix routing)
-- `apps/web/src/components/about/FounderStory.tsx` (delete or rewrite)
-- `apps/web/public/founder-portrait.jpg` (delete or replace)
+### Phase 0 (pre-lift — current flat repo layout)
+- `src/pages/Home.tsx` (0.2 fabricated-copy scrub + 0.5 import fix)
+- `src/pages/Editor.tsx`, `Intelligence.tsx`, `About.tsx` (decisions deferred to Phase 1)
+- `src/components/Navbar.tsx`, `src/components/Footer.tsx` (0.5 routes + Footer form)
+- `src/main.tsx` (0.5 router import)
+- `src/pages/legal/*` (new — Terms, Privacy, Refund, DMCA, AUP)
+- `package.json` (0.5 drop dead `react-router` dep)
+- `public/founder-portrait.jpg`, `public/editor-demo.mp4` (delete — both unreferenced)
 
+### Phase 1.0 (the lift itself)
+- `git mv src apps/web/src` and friends — see Phase 1.0 for full move list
+- New root `package.json` declaring workspaces
+- Verify with `npm install && npm -w apps/web run build`
+
+### Phase 1.1+ through Phase 4 (post-lift layout)
 **To create:**
 - `apps/api/` (full FastAPI service — ~30 files)
 - `apps/worker/` (full RQ worker — ~12 files)
@@ -507,7 +592,7 @@ Manual UAT checklist (Kasey):
 - `apps/web/src/pages/Dashboard.tsx`, `Pricing.tsx` (if not in kimi export)
 - `apps/web/src/components/editor/*.tsx` (Upload, Stepper, Style picker, etc.)
 
-**To reference (do not modify — for pattern copying):**
+### Reference patterns (not in this repo — on Kasey's local machine)
 - `/Users/kvimedia/podar-1/apps/api/src/` (Clerk + Stripe + S3 patterns)
 - `/Users/kvimedia/podar-1/scripts/deploy.sh`
 - `/Users/kvimedia/audio/backend/` (FastAPI + RQ + librosa-adjacent patterns)
@@ -518,15 +603,18 @@ Manual UAT checklist (Kasey):
 ## Definition of done
 
 CutFlow v1 ships when **all** of these are true:
-- [ ] Phase 0 legal scrub complete (no Huynh, no fabricated stats, legal pages live)
-- [ ] cutflow.ai resolves to the marketing site with working sign-in
+- [ ] Phase 0.2 copy scrub complete (no fabricated stats, no v2-feature promises, no third-party real people)
+- [ ] Phase 0.4 legal pages live (Terms, Privacy, Refund, DMCA, AUP)
+- [ ] Phase 0.5 hygiene done (broken nav fixed, dead dep dropped, duplicate asset deleted, build green)
+- [ ] Phase 1.0 monorepo lift complete and `npm -w apps/web run build` succeeds
+- [ ] `cutflow.ai` resolves to the marketing site with working Clerk sign-in
 - [ ] `api.cutflow.ai/v1/health` returns 200 with all subsystems ok
 - [ ] User can sign up, upload audio + clips, render, and download an MP4 with beat-synced cuts
 - [ ] User can pay $29 and unlock unlimited projects + 4K + no watermark
 - [ ] Stripe webhook is verified-signature + idempotent
 - [ ] All 13 smoke tests green in CI
 - [ ] Sentry receives events from frontend + API + worker
-- [ ] Waitlist captures emails and adds to Resend audience
+- [ ] Waitlist captures emails (from both Home + Footer forms) and adds to Resend audience
 - [ ] Free-tier limits enforced server-side (not just UI)
 - [ ] No Lighthouse errors on marketing pages
 - [ ] Mobile responsive on iPhone 14 Pro viewport
